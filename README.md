@@ -21,7 +21,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone <your-repo-url>
+git clone https://github.com/yatotm/tavily-mcp-loadbalancer.git
 cd tavily-mcp-loadbalancer
 
 # 2. 创建环境变量文件

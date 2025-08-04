@@ -1,5 +1,8 @@
 # Tavily MCP Load Balancer
 
+[![Docker Hub](https://img.shields.io/docker/pulls/yatotm1994/tavily-mcp-loadbalancer?style=flat-square)](https://hub.docker.com/r/yatotm1994/tavily-mcp-loadbalancer)
+[![Docker Image Size](https://img.shields.io/docker/image-size/yatotm1994/tavily-mcp-loadbalancer?style=flat-square)](https://hub.docker.com/r/yatotm1994/tavily-mcp-loadbalancer)
+
 一个支持多API密钥负载均衡的Tavily MCP服务器，可以自动轮询使用多个API密钥，提供高可用性和更高的请求限制。
 
 ## 功能特性
@@ -12,7 +15,72 @@
 
 ## 快速开始
 
-### 1. 安装依赖
+### 方式一：使用 Docker（推荐）
+
+#### 1. 使用 Docker Compose（最简单）
+
+```bash
+# 1. 克隆项目
+git clone <your-repo-url>
+cd tavily-mcp-loadbalancer
+
+# 2. 创建环境变量文件
+cp .env.example .env
+# 编辑 .env 文件，添加你的 API 密钥
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 查看日志
+docker-compose logs -f
+
+# 5. 停止服务
+docker-compose down
+```
+
+#### 2. 使用 Docker 命令
+
+```bash
+# 构建镜像
+docker build -t tavily-mcp-loadbalancer .
+
+# 运行容器
+docker run -d \
+  --name tavily-mcp-lb \
+  -p 60002:60002 \
+  -e TAVILY_API_KEYS="your-key1,your-key2,your-key3" \
+  tavily-mcp-loadbalancer
+
+# 查看日志
+docker logs -f tavily-mcp-lb
+
+# 停止容器
+docker stop tavily-mcp-lb
+docker rm tavily-mcp-lb
+```
+
+#### 3. 从 Docker Hub 运行
+
+```bash
+# 拉取并运行镜像
+docker run -d \
+  --name tavily-mcp-lb \
+  -p 60002:60002 \
+  -e TAVILY_API_KEYS="your-key1,your-key2,your-key3" \
+  yatotm1994/tavily-mcp-loadbalancer:latest
+
+# 或者先拉取再运行
+docker pull yatotm1994/tavily-mcp-loadbalancer:latest
+docker run -d \
+  --name tavily-mcp-lb \
+  -p 60002:60002 \
+  -e TAVILY_API_KEYS="your-key1,your-key2,your-key3" \
+  yatotm1994/tavily-mcp-loadbalancer:latest
+```
+
+### 方式二：本地开发模式
+
+#### 1. 安装依赖
 
 ```bash
 cd tavily-mcp-loadbalancer
@@ -184,14 +252,28 @@ node test_tools_direct.cjs
 
 ## 环境变量
 
-| 变量名 | 描述 | 默认值 |
-|--------|------|---------|
-| `TAVILY_API_KEYS` | API密钥列表（逗号分隔） | - |
-| `TAVILY_API_KEY` | 单个API密钥 | - |
-| `SUPERGATEWAY_PORT` | 服务端口 | 60002 |
-| `SUPERGATEWAY_BASE_URL` | 基础URL | http://0.0.0.0:60002 |
-| `SUPERGATEWAY_SSE_PATH` | SSE路径 | /sse |
-| `SUPERGATEWAY_MESSAGE_PATH` | 消息路径 | /message |
+| 变量名 | 描述 | 默认值 | Docker支持 |
+|--------|------|---------|------------|
+| `TAVILY_API_KEYS` | API密钥列表（逗号分隔） | - | ✅ |
+| `TAVILY_API_KEY` | 单个API密钥 | - | ✅ |
+| `SUPERGATEWAY_PORT` | 服务端口 | 60002 | ✅ |
+| `SUPERGATEWAY_BASE_URL` | 基础URL | http://0.0.0.0:60002 | ✅ |
+| `SUPERGATEWAY_SSE_PATH` | SSE路径 | /sse | ✅ |
+| `SUPERGATEWAY_MESSAGE_PATH` | 消息路径 | /message | ✅ |
+
+### Docker 环境变量设置
+
+**方式1：使用环境变量文件**
+```bash
+# 创建 .env 文件
+TAVILY_API_KEYS=key1,key2,key3
+SUPERGATEWAY_PORT=60002
+```
+
+**方式2：直接在命令行设置**
+```bash
+docker run -e "TAVILY_API_KEYS=key1,key2,key3" ...
+```
 
 ## 架构设计
 
@@ -227,6 +309,8 @@ npm test
 
 ### 常见问题
 
+#### 本地运行问题
+
 1. **No available API keys**
    - 检查环境变量是否正确设置
    - 确保至少有一个有效的API密钥
@@ -238,6 +322,51 @@ npm test
 3. **连接超时**
    - 检查网络连接
    - 确认API服务是否正常
+
+#### Docker 相关问题
+
+4. **Docker 构建失败**
+   ```bash
+   # 清理 Docker 缓存后重试
+   docker system prune -f
+   docker build --no-cache -t tavily-mcp-loadbalancer .
+   ```
+
+5. **容器启动失败**
+   ```bash
+   # 查看详细日志
+   docker logs tavily-mcp-lb
+   
+   # 检查端口是否被占用
+   lsof -i :60002
+   ```
+
+6. **环境变量未生效**
+   ```bash
+   # 检查容器环境变量
+   docker exec tavily-mcp-lb env | grep TAVILY
+   
+   # 确保 .env 文件格式正确（无空格、无引号）
+   TAVILY_API_KEYS=key1,key2,key3
+   ```
+
+7. **健康检查失败**
+   ```bash
+   # 检查容器健康状态
+   docker ps
+   
+   # 进入容器调试
+   docker exec -it tavily-mcp-lb sh
+   ```
+
+8. **数据持久化问题**
+   ```bash
+   # 检查挂载的卷
+   docker volume ls
+   
+   # 查看卷详情
+   docker volume inspect <volume_name>
+   ```
 
 ### 日志信息
 

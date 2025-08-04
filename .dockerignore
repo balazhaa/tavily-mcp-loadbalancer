@@ -1,0 +1,63 @@
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 开发文件
+*.md
+!README.md
+.env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+dist/
+build/
+
+# 测试文件
+coverage/
+*.test.ts
+*.spec.ts
+jest.config.*
+
+# IDE和编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.temp
+
+# 日志文件
+logs/
+*.log
+
+# Docker相关
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# 其他
+*.tgz
+*.tar.gz

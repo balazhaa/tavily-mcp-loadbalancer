@@ -11,17 +11,23 @@ case "$1" in
         echo "🧪 测试所有工具..."
         node test_tools_direct.cjs
         ;;
+    "weather"|"weather-test")
+        echo "🌤️  测试天气搜索功能..."
+        node test_weather_search.cjs
+        ;;
     "help"|"--help"|"-h"|"")
         echo "Tavily MCP 负载均衡器管理工具"
         echo ""
         echo "使用方法:"
         echo "  ./manage.sh stats    - 查看API密钥池状态"
         echo "  ./manage.sh test     - 测试所有工具"
+        echo "  ./manage.sh weather  - 测试天气搜索功能"
         echo "  ./manage.sh help     - 显示此帮助信息"
         echo ""
         echo "直接使用:"
         echo "  node check_stats_direct.cjs    - 查看详细统计"  
         echo "  node test_tools_direct.cjs     - 运行工具测试"
+        echo "  node test_weather_search.cjs   - 天气搜索测试"
         echo ""
         echo "启动服务器:"
         echo "  npm run build-and-start        - 构建并启动服务器"

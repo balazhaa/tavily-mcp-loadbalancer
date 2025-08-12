@@ -9,17 +9,27 @@ console.log('======================================');
 // 测试工具列表
 const tests = [
     {
-        name: 'tavily_get_stats',
-        args: {},
-        description: 'API密钥池统计'
+        name: 'search',
+        args: {
+            query: 'Node.js tutorial',
+            max_results: 2
+        },
+        description: '搜索功能测试'
     },
     {
         name: 'tavily-search',
         args: {
-            query: 'Node.js',
+            query: 'JavaScript frameworks',
             max_results: 2
         },
         description: '网络搜索功能'
+    },
+    {
+        name: 'tavily-extract',
+        args: {
+            urls: ['https://nodejs.org']
+        },
+        description: '网页内容提取'
     }
 ];
 
@@ -66,17 +76,9 @@ function runTest(testConfig) {
                             const resultText = response.result.content[0].text;
                             
                             // 显示结果预览
-                            if (testConfig.name === 'tavily_get_stats') {
-                                try {
-                                    const stats = JSON.parse(resultText);
-                                    console.log(`活跃密钥: ${stats.active}/${stats.total}`);
-                                } catch (e) {
-                                    console.log('统计信息获取成功');
-                                }
-                            } else {
-                                const preview = resultText.substring(0, 200);
-                                console.log('结果预览:', preview + (resultText.length > 200 ? '...' : ''));
-                            }
+                            const preview = resultText.substring(0, 200);
+                            console.log('结果预览:', preview + (resultText.length > 200 ? '...' : ''));
+                            console.log('响应大小:', resultText.length, '字符');
                         }
                         
                         console.log('');

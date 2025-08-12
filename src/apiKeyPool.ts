@@ -36,7 +36,7 @@ export class ApiKeyPool {
 
   getNextKey(): string | null {
     const activeKeys = this.keys.filter(k => k.active);
-    
+
     if (activeKeys.length === 0) {
       console.warn('No active API keys available');
       return null;
@@ -44,9 +44,14 @@ export class ApiKeyPool {
 
     // 使用轮询策略选择下一个密钥
     const key = activeKeys[this.currentIndex % activeKeys.length];
+    const keyIndex = this.currentIndex % activeKeys.length;
     this.currentIndex = (this.currentIndex + 1) % activeKeys.length;
-    
+
     key.lastUsed = new Date();
+
+    // 输出密钥使用日志
+    console.log(`[${new Date().toISOString()}] [INFO] Using API key: ${key.key.substring(0, 10)}... (Key ${keyIndex + 1}/${activeKeys.length})`);
+
     return key.key;
   }
 
@@ -54,9 +59,10 @@ export class ApiKeyPool {
     const key = this.keys.find(k => k.key === keyValue);
     if (key) {
       key.errorCount = (key.errorCount || 0) + 1;
-      
+      console.log(`[${new Date().toISOString()}] [WARN] API key ${keyValue.substring(0, 10)}... request failed (errors: ${key.errorCount}/${key.maxErrors || 5})`);
+
       if (key.errorCount >= (key.maxErrors || 5)) {
-        console.warn(`API key ${keyValue.substring(0, 10)}... disabled due to too many errors`);
+        console.warn(`[${new Date().toISOString()}] [ERROR] API key ${keyValue.substring(0, 10)}... disabled due to too many errors`);
         key.active = false;
       }
     }
@@ -66,6 +72,7 @@ export class ApiKeyPool {
     const key = this.keys.find(k => k.key === keyValue);
     if (key) {
       key.errorCount = 0;
+      console.log(`[${new Date().toISOString()}] [INFO] API key ${keyValue.substring(0, 10)}... request successful`);
     }
   }
 

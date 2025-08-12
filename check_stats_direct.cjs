@@ -39,31 +39,30 @@ mcpProcess.stdout.on('data', (data) => {
                 if (response.result && response.result.content) {
                     hasReceivedResponse = true;
                     clearTimeout(timeout);
-                    
-                    const statsText = response.result.content[0].text;
-                    const stats = JSON.parse(statsText);
-                    
+
                     console.log('✅ 连接成功\n');
-                    console.log('📊 API密钥池统计信息:');
+                    console.log('📊 Tavily MCP 负载均衡器状态:');
                     console.log('========================================');
-                    console.log(`总密钥数量: ${stats.total}`);
-                    console.log(`活跃密钥数量: ${stats.active}\n`);
-                    console.log('📋 密钥详情:');
-                    console.log('----------------------------------------');
-                    
-                    stats.keys.forEach(key => {
-                        const status = key.active ? '🟢 活跃' : '🔴 禁用';
-                        console.log(`🔑 密钥: ${key.key}`);
-                        console.log(`   状态: ${status}`);
-                        console.log(`   错误次数: ${key.errorCount}/${key.maxErrors}`);
-                        console.log(`   最后使用: ${key.lastUsed}`);
-                        console.log(`   权重: ${key.weight}\n`);
-                    });
-                    
-                    console.log('========================================');
-                    console.log('💡 提示: 如果某个密钥被禁用，请检查密钥是否有效');
-                    console.log('🔄 重启服务器会重置所有密钥状态');
-                    
+
+                    if (response.result.isError) {
+                        console.log('❌ 测试搜索失败');
+                        console.log('错误信息:', response.result.content[0].text);
+                    } else {
+                        console.log('✅ 搜索功能正常');
+                        const resultText = response.result.content[0].text;
+                        console.log('搜索结果长度:', resultText.length, '字符');
+
+                        // 显示结果预览
+                        const preview = resultText.substring(0, 200);
+                        console.log('结果预览:', preview + (resultText.length > 200 ? '...' : ''));
+                    }
+
+                    console.log('\n========================================');
+                    console.log('💡 提示:');
+                    console.log('- 使用 node test_tools_direct.cjs 测试所有工具');
+                    console.log('- 使用 node test_weather_search.cjs 批量测试密钥');
+                    console.log('- 使用 node test_sse_validation.cjs 测试SSE连接');
+
                     mcpProcess.kill();
                     process.exit(0);
                 }
@@ -90,14 +89,17 @@ mcpProcess.on('error', (error) => {
     process.exit(1);
 });
 
-// 发送获取统计信息的请求
+// 发送测试搜索请求来验证连接
 const request = {
     jsonrpc: "2.0",
     id: 1,
     method: "tools/call",
     params: {
-        name: "tavily_get_stats",
-        arguments: {}
+        name: "search",
+        arguments: {
+            query: "test connection",
+            max_results: 1
+        }
     }
 };
 

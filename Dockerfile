@@ -32,7 +32,7 @@ EXPOSE 60002
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); const options = { host: 'localhost', port: 60002, path: '/health', timeout: 2000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
+  CMD node -e "const http = require('http'); const options = { host: 'localhost', port: process.env.SUPERGATEWAY_PORT || 60002, path: '/health', timeout: 2000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
 # 启动命令
 CMD ["node", "dist/start.js"]

